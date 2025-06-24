@@ -1,10 +1,12 @@
+import type { PutObjectCommandInput } from "@aws-sdk/client-s3";
+
 import { s3Client } from "@/lib/s3";
 
-import { PutObjectCommand, PutObjectCommandInput } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export default async function uploadObject(Key: string) {
   const params: PutObjectCommandInput = {
-    Bucket: process.env.SPACES_BUCKET!,
+    Bucket: process.env.SPACES_BUCKET || "",
     Key,
     Body: "Hello, World!",
     ACL: "private",
@@ -15,9 +17,7 @@ export default async function uploadObject(Key: string) {
 
   try {
     const data = await s3Client.send(new PutObjectCommand(params));
-    console.log(
-      "Successfully uploaded object: " + params.Bucket + "/" + params.Key,
-    );
+    console.log(`Successfully uploaded object: ${params.Bucket}/${params.Key}`);
     return data;
   } catch (err) {
     console.log("Error", err);

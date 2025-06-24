@@ -1,5 +1,6 @@
+import type { Items } from "@/types/items";
+
 import { formatter } from "@/lib/formatter";
-import { Items } from "@/types/items";
 
 import { Link as NextViewTransition } from "next-view-transitions";
 import React from "react";
@@ -32,14 +33,9 @@ const PageLayout = ({ items, path }: PageProps) => {
         return (
           <React.Fragment key={item.slug}>
             <Seperator />
-            <NextViewTransition
-              href={getSlug(path, item.slug)}
-              className="flex w-full justify-between py-2"
-            >
+            <NextViewTransition href={getSlug(path, item.slug)} className="flex w-full justify-between py-2">
               <p>{item.title}</p>
-              <p className="mt-0 text-muted">
-                {formatter.date(new Date(item.createdAt))}
-              </p>
+              <p className="mt-0 text-muted">{formatter.date(new Date(item.createdAt))}</p>
             </NextViewTransition>
           </React.Fragment>
         );
@@ -49,7 +45,7 @@ const PageLayout = ({ items, path }: PageProps) => {
 };
 
 function getSlug(path: string, slug: string) {
-  if (path == "") return `/${slug}`;
+  if (path === "") return `/${slug}`;
   return `/${path}/${slug}`;
 }
 

@@ -1,5 +1,4 @@
 import PageLayout from "@/components/PageLayout";
-import { OpenGraph } from "@/lib/og";
 
 import { notFound } from "next/navigation";
 

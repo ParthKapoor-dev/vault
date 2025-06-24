@@ -5,8 +5,8 @@ const s3Client = new S3({
   endpoint: "https://blr1.digitaloceanspaces.com",
   region: "blr1",
   credentials: {
-    accessKeyId: process.env.SPACES_KEY!,
-    secretAccessKey: process.env.SPACES_SECRET!,
+    accessKeyId: process.env.SPACES_KEY || "",
+    secretAccessKey: process.env.SPACES_SECRET || "",
   },
 });
 

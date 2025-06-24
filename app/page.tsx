@@ -1,9 +1,7 @@
-import * as FadeIn from "@/components/motion/staggers/fade";
-import PageLayout from "@/components/PageLayout";
-import { OpenGraph } from "@/lib/og";
-import { Items } from "@/types/items";
+import type { Items } from "@/types/items";
 
-import { time } from "console";
+import PageLayout from "@/components/PageLayout";
+import * as FadeIn from "@/components/motion/staggers/fade";
 
 import React from "react";
 

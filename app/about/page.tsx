@@ -1,4 +1,3 @@
-import { Footer } from "@/components/footer";
 import * as FadeIn from "@/components/motion/staggers/fade";
 
 const Spacer = () => <div style={{ marginTop: "24px" }} />;
@@ -17,12 +16,9 @@ export default function Home() {
       <Spacer />
       <FadeIn.Item>
         <p>
-          Sylph is a Next.js Portfolio Starter that you can use to create your
-          own portfolio website. It is designed to be minimal, lightweight, and
-          fast. It is also highly customizable, so you can easily make it your
-          own. Sylph is perfect for developers, designers, and other creatives
-          who want to showcase their work. To start using Sylph, you can follow
-          the guides below.
+          Sylph is a Next.js Portfolio Starter that you can use to create your own portfolio website. It is designed to be minimal, lightweight, and fast. It is
+          also highly customizable, so you can easily make it your own. Sylph is perfect for developers, designers, and other creatives who want to showcase
+          their work. To start using Sylph, you can follow the guides below.
         </p>
       </FadeIn.Item>
       {/* <FadeIn.Item>

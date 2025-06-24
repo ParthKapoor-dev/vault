@@ -10,7 +10,7 @@ export const auth = betterAuth({
   },
   plugins: [
     customSession(async ({ user, session }) => {
-      const isAdmin = user.email === "pkapoor_be22@thapar.edu" ? true : false;
+      const isAdmin = user.email === "pkapoor_be22@thapar.edu";
       return {
         user: {
           ...user,
