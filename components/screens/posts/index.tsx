@@ -14,7 +14,7 @@ interface Props {
   route: string;
 }
 
-export const Layout = ({ post, route }: Props) => {
+const PostLayout = ({ post, route }: Props) => {
   const posts = getPosts(route);
 
   const Seperator = () => {
@@ -53,3 +53,5 @@ export const Layout = ({ post, route }: Props) => {
     </React.Fragment>
   );
 };
+
+export default PostLayout;
