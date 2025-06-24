@@ -16,3 +16,7 @@ export const logout = async () => {
 export const useSession = () => {
   return authClient.useSession();
 };
+
+export const getSession = async () => {
+  return await authClient.getSession();
+};

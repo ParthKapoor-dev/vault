@@ -1,4 +1,4 @@
-import PageLayout from "@/components/PageLayout";
+import PageLayout from "@/components/PageTemplate";
 
 import { notFound } from "next/navigation";
 

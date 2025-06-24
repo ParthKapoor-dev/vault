@@ -1,27 +1,15 @@
+// page.tsx
 import type { Items } from "@/types/items";
-
-import PageLayout from "@/components/PageLayout";
 import * as FadeIn from "@/components/motion/staggers/fade";
-
+import PageTemplate from "@/components/PageTemplate";
+import { getSession } from "@/lib/auth/client";
 import React from "react";
 
-// export function generateMetadata() {
-//   const image = `${process.env.NEXT_PUBLIC_SITE_URL}api/og?title=${encodeURIComponent(category)}`;
+export default async function Page() {
+  const { data } = await getSession();
+  // const isAdmin = data?.user?.isAdmin!;
+  const isAdmin = true;
 
-//   return {
-//     ...OpenGraph,
-//     category,
-//     openGraph: {
-//       category,
-//       images: [image],
-//     },
-//     twitter: {
-//       images: [image],
-//     },
-//   };
-// }
-
-export default function Page() {
   const items: Items = [
     {
       type: "Directory",
@@ -53,11 +41,18 @@ export default function Page() {
             <h1>lnx.parthkapoor.me</h1>
             <h2>Vault</h2>
           </div>
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground bg-emerald-500 px-2 py-1 rounded">
+                Admin Mode
+              </span>
+            </div>
+          )}
         </div>
       </FadeIn.Item>
       <Spacer />
       <FadeIn.Item>
-        <PageLayout items={items} path="" />
+        <PageTemplate items={items} path="" isAdmin={isAdmin == true} />
       </FadeIn.Item>
     </React.Fragment>
   );
