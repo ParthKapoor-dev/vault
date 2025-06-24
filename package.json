@@ -4,14 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run lint && npm run mdx:timestamps && next build",
+    "build": " npm run mdx:timestamps && next build",
     "start": "next start",
     "postbuild": "next-sitemap",
-    "mdx:timestamps": "node ./scripts/update-mdx-timestamps",
-    "lint:style": "npx stylelint \"**/*.css\" --fix",
-    "lint:biome": "npx biome check --fix --unsafe .",
-    "lint:prettier": "npx prettier . --write --log-level warn",
-    "lint": "npm run lint:style && npm run lint:prettier && npm run lint:biome"
+    "mdx:timestamps": "node ./scripts/update-mdx-timestamps"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.835.0",

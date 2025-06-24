@@ -50,5 +50,5 @@ export default async function Page({ params }: PageProps) {
     return notFound();
   }
 
-  return <PageLayout items={items} path={pathName} />;
+  return <PageLayout items={items} path={pathName} isAdmin={false} />;
 }
