@@ -1,3 +1,4 @@
+"use server";
 import type { GetObjectCommandInput } from "@aws-sdk/client-s3";
 
 import { s3Client } from "@/lib/s3";
