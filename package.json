@@ -31,6 +31,8 @@
     "create-stylelint": "^0.5.0",
     "framer-motion": "^11.11.9",
     "fs": "^0.0.2",
+    "geist": "^1.4.2",
+    "google": "link:next/font/google",
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.10.0",
     "lucide": "^0.452.0",

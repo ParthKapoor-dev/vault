@@ -4,7 +4,11 @@ import type { Items } from "@/types/items";
 import { getSession } from "@/lib/auth/client";
 import { formatter } from "@/lib/formatter";
 import { Link as NextViewTransition } from "next-view-transitions";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Delete, Edit, Edit2, Trash2 } from "lucide-react";
+import { createS3Item } from "@/actions/s3/create";
+import { renameS3Item } from "@/actions/s3/rename";
+import { deleteS3Item } from "@/actions/s3/delete";
 
 interface PageProps {
   items: Items;
@@ -36,7 +40,7 @@ const CreateItemForm = ({ onSubmit, onCancel }: CreateItemFormProps) => {
   };
 
   return (
-    <div className="border border-border rounded-md p-4 mb-4 bg-background">
+    <div className="border border-border rounded-sm p-4 mb-4 bg-background">
       <h3 className="text-sm font-medium mb-3">Create New Item</h3>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
@@ -44,7 +48,7 @@ const CreateItemForm = ({ onSubmit, onCancel }: CreateItemFormProps) => {
           <select
             value={type}
             onChange={(e) => setType(e.target.value as "Directory" | "File")}
-            className="w-full px-3 py-2 border border-border rounded-md text-sm"
+            className="w-full p-3 border border-border rounded-md text-sm"
           >
             <option value="Directory">Directory</option>
             <option value="File">File</option>
@@ -57,7 +61,7 @@ const CreateItemForm = ({ onSubmit, onCancel }: CreateItemFormProps) => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter title"
-            className="w-full px-3 py-2 border border-border rounded-md text-sm"
+            className="w-full p-3 border border-border rounded-md text-sm"
             required
           />
         </div>
@@ -75,7 +79,7 @@ const CreateItemForm = ({ onSubmit, onCancel }: CreateItemFormProps) => {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+            className="px-4 py-2 bg-gray-5 text-white rounded-sm text-sm hover:bg-gray-3"
           >
             Create
           </button>
@@ -110,7 +114,7 @@ const EditItemForm = ({ item, onSubmit, onCancel }: EditItemFormProps) => {
   };
 
   return (
-    <div className="border border-border rounded-md p-4 mb-2 bg-background">
+    <div className="border border-border rounded-sm p-4 mb-2 bg-background">
       <h3 className="text-sm font-medium mb-3">Edit Item</h3>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
@@ -157,6 +161,7 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
   const [items, setItems] = useState(initialItems);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | null>(null);
 
   const sortedItems = items.sort((a, b) => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -167,23 +172,21 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
     title: string;
     slug: string;
   }) => {
+    setLoading("create");
     try {
-      // TODO: Call S3 business logic function here
-      // await createS3Item(path, newItem);
-
       const createdItem = {
         ...newItem,
         createdAt: Date.now(),
       };
 
+      await createS3Item(path, createdItem);
       setItems((prev) => [...prev, createdItem]);
       setShowCreateForm(false);
-
-      // Placeholder for success feedback
-      console.log("Item created:", createdItem);
     } catch (error) {
       console.error("Failed to create item:", error);
-      // TODO: Show error message to user
+      // TODO: Show error toast/notification
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -191,10 +194,9 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
     slug: string,
     updatedData: { title: string; slug: string },
   ) => {
+    setLoading(`update-${slug}`);
     try {
-      // TODO: Call S3 business logic function here
-      // await updateS3Item(path, slug, updatedData);
-
+      await renameS3Item(path, slug, updatedData);
       setItems((prev) =>
         prev.map((item) =>
           item.slug === slug
@@ -203,12 +205,11 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
         ),
       );
       setEditingItem(null);
-
-      // Placeholder for success feedback
-      console.log("Item updated:", updatedData);
     } catch (error) {
       console.error("Failed to update item:", error);
-      // TODO: Show error message to user
+      // TODO: Show error toast/notification
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -217,32 +218,30 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
       return;
     }
 
+    setLoading(`delete-${slug}`);
     try {
-      // TODO: Call S3 business logic function here
-      // await deleteS3Item(path, slug);
-
+      await deleteS3Item(path, slug);
       setItems((prev) => prev.filter((item) => item.slug !== slug));
-
-      // Placeholder for success feedback
-      console.log("Item deleted:", slug);
     } catch (error) {
       console.error("Failed to delete item:", error);
-      // TODO: Show error message to user
+      // TODO: Show error toast/notification
+    } finally {
+      setLoading(null);
     }
   };
 
   const Seperator = () => <div className="border-border border-t" />;
 
-  if (sortedItems.length === 0 && !isAdmin) {
-    return null;
-  }
+  useEffect(() => {
+    console.log(isAdmin);
+  }, [isAdmin]);
 
   return (
     <div className="flex flex-col">
       <div className="flex justify-between items-center">
         <NextViewTransition href={`/${path}`} className="flex justify-between">
           <h2 className="py-2 text-muted capitalize">
-            {path.split("/")[-1]}{" "}
+            {path.split("/")[path.split("/").length - 1]}{" "}
             {sortedItems.length > 0 && `(${sortedItems.length})`}
           </h2>
         </NextViewTransition>
@@ -250,7 +249,7 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
         {isAdmin && (
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+            className="px-3 py-1 bg-gray-5 text-white rounded-sm text-sm hover:bg-gray-3"
           >
             {showCreateForm ? "Cancel" : "Add New"}
           </button>
@@ -262,6 +261,12 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
           onSubmit={handleCreateItem}
           onCancel={() => setShowCreateForm(false)}
         />
+      )}
+
+      {sortedItems.length == 0 && (
+        <div className="py-8 italic flex justify-center items-center text-gray-7">
+          No Items in this directory
+        </div>
       )}
 
       {sortedItems.map((item) => {
@@ -280,42 +285,43 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
                 onCancel={() => setEditingItem(null)}
               />
             ) : (
-              <div className="flex w-full justify-between py-2 group">
-                <NextViewTransition
-                  href={getSlug(path, item.slug)}
-                  className="flex w-full justify-between"
-                >
-                  <p>{item.title}</p>
+              <NextViewTransition
+                href={getSlug(path, item.slug)}
+                className="flex w-full justify-between items-center py-2 group"
+              >
+                <p>{item.title}</p>
+                <div className="flex gap-2 items-center justify-between">
+                  {isAdmin && (
+                    <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setEditingItem(item.slug);
+                        }}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50/10 rounded-md transition-colors"
+                        title="Edit"
+                        // disabled={itemLoading}
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDeleteItem(item.slug);
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50/10 rounded-md transition-colors"
+                        title="Delete"
+                        // disabled={itemLoading}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                   <p className="mt-0 text-muted">
                     {formatter.date(new Date(item.createdAt))}
                   </p>
-                </NextViewTransition>
-
-                {isAdmin && (
-                  <div className="flex gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setEditingItem(item.slug);
-                      }}
-                      className="px-2 py-1 bg-yellow-500 text-white rounded text-xs hover:bg-yellow-600"
-                      title="Edit"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleDeleteItem(item.slug);
-                      }}
-                      className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
-                      title="Delete"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
+                </div>
+              </NextViewTransition>
             )}
           </React.Fragment>
         );

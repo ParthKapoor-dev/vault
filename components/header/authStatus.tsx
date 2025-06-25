@@ -1,13 +1,13 @@
 "use client";
 
 import { login, useSession } from "@/lib/auth/client";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 import Image from "next/image";
 
 export const AuthStatus = () => {
   const { data, isPending, error } = useSession();
   const user = data?.user;
-  console.log("Header:", user);
 
   if (!user) {
     return (
@@ -16,7 +16,13 @@ export const AuthStatus = () => {
         onClick={login}
         className="rounded bg-black px-4 py-2 text-sm text-white hover:opacity-80"
       >
-        {isPending ? "Loading..." : "Login"}
+        {isPending ? (
+          "Loading..."
+        ) : (
+          <div className="flex justify-center items-center gap-2">
+            Github <GitHubLogoIcon />
+          </div>
+        )}
       </button>
     );
   }
