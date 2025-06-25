@@ -2,36 +2,21 @@
 import type { Items } from "@/types/items";
 import * as FadeIn from "@/components/motion/staggers/fade";
 import PageTemplate from "@/components/PageTemplate";
-import { getSession } from "@/lib/auth/client";
 import React from "react";
+import { getSession } from "@/lib/auth";
+import { headers } from "next/headers";
+import { listObjectsV2 } from "@/actions/s3/list";
+import { notFound } from "next/navigation";
 
 export default async function Page() {
-  const { data } = await getSession();
-  // const isAdmin = data?.user?.isAdmin!;
-  const isAdmin = true;
-
-  const items: Items = [
-    {
-      type: "Directory",
-      slug: "resumes",
-      title: "Resumes",
-      createdAt: Date.now(),
-    },
-    {
-      type: "Directory",
-      slug: "config",
-      title: "Config Files",
-      createdAt: Date.now(),
-    },
-    {
-      type: "Directory",
-      slug: "about",
-      title: "About Me",
-      createdAt: Date.now(),
-    },
-  ];
-
+  const data = await getSession(headers());
+  const isAdmin = data?.user?.isAdmin;
   const Spacer = () => <div style={{ marginTop: "24px" }} />;
+
+  const items = await listObjectsV2("");
+  if (!items) {
+    return notFound();
+  }
 
   return (
     <React.Fragment>
@@ -41,13 +26,6 @@ export default async function Page() {
             <h1>lnx.parthkapoor.me</h1>
             <h2>Vault</h2>
           </div>
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground bg-emerald-500 px-2 py-1 rounded">
-                Admin Mode
-              </span>
-            </div>
-          )}
         </div>
       </FadeIn.Item>
       <Spacer />
@@ -57,3 +35,24 @@ export default async function Page() {
     </React.Fragment>
   );
 }
+
+const mockItems: Items = [
+  {
+    type: "Directory",
+    slug: "resumes",
+    title: "Resumes",
+    createdAt: Date.now(),
+  },
+  {
+    type: "Directory",
+    slug: "config",
+    title: "Config Files",
+    createdAt: Date.now(),
+  },
+  {
+    type: "Directory",
+    slug: "about",
+    title: "About Me",
+    createdAt: Date.now(),
+  },
+];
