@@ -1,7 +1,7 @@
 "use client";
 // PageLayout Component
 import type { Items } from "@/types/items";
-import { getSession } from "@/lib/auth/client";
+import { getSession, useSession } from "@/lib/auth/client";
 import { formatter } from "@/lib/formatter";
 import { Link as NextViewTransition } from "next-view-transitions";
 import React, { useEffect, useState } from "react";
@@ -9,15 +9,12 @@ import { Delete, Edit, Edit2, Trash2 } from "lucide-react";
 import { createS3Item } from "@/actions/s3/create";
 import { renameS3Item } from "@/actions/s3/rename";
 import { deleteS3Item } from "@/actions/s3/delete";
+import { cx } from "class-variance-authority";
+import { InferUser } from "better-auth";
 
 interface PageProps {
   items: Items;
   path: string;
-  isAdmin: boolean;
-  user: {
-    name: string;
-    email: string;
-  };
 }
 
 interface CreateItemFormProps {
@@ -161,16 +158,14 @@ const EditItemForm = ({ item, onSubmit, onCancel }: EditItemFormProps) => {
   );
 };
 
-const PageLayout = ({
-  items: initialItems,
-  path,
-  isAdmin,
-  user,
-}: PageProps) => {
+const PageLayout = ({ items: initialItems, path }: PageProps) => {
   const [items, setItems] = useState(initialItems);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const { data } = useSession();
+  const user = data?.user;
+  const isAdmin = !!user?.isAdmin;
 
   const sortedItems = items.sort((a, b) => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -242,7 +237,7 @@ const PageLayout = ({
   const Seperator = () => <div className="border-border border-t" />;
 
   console.log("isAdmin in PageTemplate", isAdmin);
-  console.log("User Email: ", user.email);
+  console.log("User Email: ", user?.email);
   return (
     <div className="flex flex-col">
       <div className="flex justify-between items-center">

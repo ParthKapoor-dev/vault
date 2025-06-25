@@ -19,20 +19,10 @@ export default async function Page({ params }: PageProps) {
   const slugArray = params.slug || [];
   const pathName = slugArray.join("/");
 
-  const data = await getSession(headers());
-  const isAdmin = data?.user?.isAdmin!;
-
   const items = await listObjectsV2(pathName);
   if (!items) {
     return notFound();
   }
 
-  return (
-    <PageLayout
-      items={items}
-      path={pathName}
-      isAdmin={isAdmin == true}
-      user={data?.user || { name: "", email: "" }}
-    />
-  );
+  return <PageLayout items={items} path={pathName} />;
 }

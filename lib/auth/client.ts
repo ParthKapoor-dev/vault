@@ -1,22 +1,18 @@
 import { createAuthClient } from "better-auth/react";
+import { customSessionClient } from "better-auth/client/plugins";
+import { auth } from "./index";
 
-export const authClient = createAuthClient();
+export const authClient = createAuthClient({
+  plugins: [customSessionClient<typeof auth>()],
+});
 
-export const login = async () => {
-  const data = await authClient.signIn.social({
+export const login = async () =>
+  await authClient.signIn.social({
     provider: "github",
   });
-  console.log(data);
-};
 
-export const logout = async () => {
-  await authClient.signOut();
-};
+export const logout = async () => await authClient.signOut();
 
-export const useSession = () => {
-  return authClient.useSession();
-};
+export const useSession = () => authClient.useSession();
 
-export const getSession = async () => {
-  return await authClient.getSession();
-};
+export const getSession = async () => await authClient.getSession();
