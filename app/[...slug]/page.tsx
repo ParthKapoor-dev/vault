@@ -27,5 +27,12 @@ export default async function Page({ params }: PageProps) {
     return notFound();
   }
 
-  return <PageLayout items={items} path={pathName} isAdmin={isAdmin == true} />;
+  return (
+    <PageLayout
+      items={items}
+      path={pathName}
+      isAdmin={isAdmin == true}
+      user={data?.user || { name: "", email: "" }}
+    />
+  );
 }
