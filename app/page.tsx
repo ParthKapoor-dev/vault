@@ -12,6 +12,7 @@ export default async function Page() {
   const data = await getSession(headers());
   const isAdmin = data?.user?.isAdmin;
   const Spacer = () => <div style={{ marginTop: "24px" }} />;
+  console.log("User: ", data?.user.email);
 
   const items = await listObjectsV2("");
   if (!items) {
@@ -30,7 +31,12 @@ export default async function Page() {
       </FadeIn.Item>
       <Spacer />
       <FadeIn.Item>
-        <PageTemplate items={items} path="" isAdmin={isAdmin == true} />
+        <PageTemplate
+          items={items}
+          path=""
+          isAdmin={isAdmin == true}
+          user={data?.user || { name: "", email: "" }}
+        />
       </FadeIn.Item>
     </React.Fragment>
   );

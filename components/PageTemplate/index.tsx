@@ -14,6 +14,10 @@ interface PageProps {
   items: Items;
   path: string;
   isAdmin: boolean;
+  user: {
+    name: string;
+    email: string;
+  };
 }
 
 interface CreateItemFormProps {
@@ -157,7 +161,12 @@ const EditItemForm = ({ item, onSubmit, onCancel }: EditItemFormProps) => {
   );
 };
 
-const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
+const PageLayout = ({
+  items: initialItems,
+  path,
+  isAdmin,
+  user,
+}: PageProps) => {
   const [items, setItems] = useState(initialItems);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
@@ -232,10 +241,8 @@ const PageLayout = ({ items: initialItems, path, isAdmin }: PageProps) => {
 
   const Seperator = () => <div className="border-border border-t" />;
 
-  useEffect(() => {
-    console.log(isAdmin);
-  }, [isAdmin]);
-
+  console.log("isAdmin in PageTemplate", isAdmin);
+  console.log("User Email: ", user.email);
   return (
     <div className="flex flex-col">
       <div className="flex justify-between items-center">
