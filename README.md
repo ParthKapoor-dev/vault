@@ -1,64 +1,114 @@
-# 🗃️ Lnx Vault
+# 🧠 LNX Vault
 
-> A blazing-fast personal vault for storing dotfiles, resumes, setup guides, configs — powered by Next.js, Tailwind, and S3.
+**Your own private, self-hostable digital vault — powered by GitHub Auth and S3.**
+Create directories, upload files, write beautiful markdowns, and access it all from a minimal web UI.
+Perfect for dotfiles, resumes, personal notes, and more — with support for public/private access control.
 
-![Next.js](https://img.shields.io/badge/Built_with-Next.js-black?style=flat&logo=next.js)
-![Tailwind](https://img.shields.io/badge/Styled_with-TailwindCSS-38bdf8?style=flat&logo=tailwindcss)
-![S3](https://img.shields.io/badge/Storage-S3-ffb700?style=flat&logo=amazon-aws)
-
----
-
-## 🚀 Features
-
-- ⚡ Dynamic page routing — no hardcoded paths
-- 🔐 GitHub Auth with Admin CRUD support
-- 🗂 Store directories, config files, and more
-- 📁 Private/public vault content (coming soon)
-- ☁️ Backed by S3 object storage
+> 🌐 Live Demo: [lnx.parthkapoor.me](https://lnx.parthkapoor.me)
 
 ---
 
-## 🛠️ Stack
+## ✨ Features
 
-- **Frontend**: Next.js App Router + TailwindCSS
-- **Auth**: [better-auth](https://github.com/ajvdev/better-auth)
-- **Storage**: Amazon S3 (or compatible)
-- **Deploy**: Vercel
+- 🔐 **GitHub Authentication** with Admin access control
+- 🪣 **S3-Backed Storage** (DigitalOcean Spaces, AWS S3, etc.)
+- 📂 **Directory and File Management** via Web
+- 📝 **Markdown Editor** for notes, resumes, and guides
+- 🌐 **Public/Private Access** for files and folders
+- 🚀 **One-Click Deploy on Vercel**
 
 ---
 
-## 🧪 Development
+## ⚙️ Tech Stack
+
+- **Frontend**: Next.js (TypeScript)
+- **Auth**: [Better Stack Auth](https://betterstack.com/)
+- **Storage**: S3-compatible (Spaces, AWS, etc.)
+- **Cache**: Upstash Redis
+- **Markdown**: MDX Rendering
+
+---
+
+## 🚀 Self-Hosting Guide
+
+### 1. 🍴 Clone the Repository
 
 ```bash
-pnpm install
-pnpm dev
+git clone https://github.com/parthkapoor-dev/lnx-vault.git
+cd lnx-vault
 ````
 
-> Make sure to set up `.env` with your GitHub and S3 credentials.
-
 ---
 
-## 🤖 Coming Soon
+### 2. 🧪 Set Up Environment Variables
 
-* Inline file editor
-* Markdown rendering
-* Toggle visibility (private/public vaults)
+Create a `.env` file in the root:
 
----
+```env
+# Your live or local URL
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 
-## 🧑‍💻 Author
+# Better Auth
+BETTER_AUTH_SECRET=""
+BETTER_AUTH_URL="http://localhost:3000"
 
-Made with caffeine + curiosity by [@parthkapoor08](https://github.com/parthkapoor-dev)
+# GitHub OAuth App
+GITHUB_CLIENT_ID=""
+GITHUB_CLIENT_SECRET=""
 
----
+# Upstash Redis
+UPSTASH_REDIS_REST_URL=""
+UPSTASH_REDIS_REST_TOKEN=""
 
+# S3 / Spaces
+SPACES_KEY=""
+SPACES_SECRET=""
+SPACES_BUCKET=""
 ```
 
-Let me know if you want:
-- OpenGraph preview banner
-- Live demo link
-- Contributors + license section
-- Badges for deployments or coverage
+> 💡 You can use [DigitalOcean Spaces](https://www.digitalocean.com/products/spaces) or any S3-compatible provider.
 
-I can style it for OSS vibes or professional tone depending on your preference.
+---
+
+### 3. 🧑‍💻 Run Locally
+
+```bash
+npm install
+npm run dev
 ```
+
+Now open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+### 4. ☁️ Deploy on Vercel (Recommended)
+
+1. Push the repo to your GitHub
+2. Go to [vercel.com](https://vercel.com)
+3. Click **"Import Project"**, choose your repo
+4. Set the environment variables in Vercel dashboard
+5. Click **Deploy**
+
+Done 🎉 Your personalized cloud vault is now live!
+
+---
+
+## 🔐 Admin Access
+
+By default, only the GitHub account marked as "admin" in your `.env`-connected auth logic can:
+
+* Create/upload/edit files & markdowns
+* Add/remove directories
+* Toggle public/private flags
+
+---
+
+## 📄 License
+
+MIT © [Parth Kapoor](https://parthkapoor.me)
+
+---
+
+## 🌟 Star This Project
+
+If this helped you organize your digital life — consider giving it a ⭐ on GitHub!
