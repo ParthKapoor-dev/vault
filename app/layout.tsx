@@ -8,17 +8,9 @@ import Header from "@/components/header";
 import { Providers } from "@/components/providers";
 import { OpenGraph } from "@/lib/og";
 
-import clsx from "clsx";
-import { Inter } from "next/font/google";
-
 export const metadata: Metadata = {
   ...OpenGraph,
 };
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export default function RootLayout({
   children,
@@ -27,9 +19,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${GeistMono.className} ${GeistSans.className} `}>
+      <body
+        suppressHydrationWarning
+        className={`${GeistMono.variable} ${GeistSans.className} ${GeistSans.variable}`}
+      >
         <Providers>
-          <main className="mx-auto max-w-screen-sm overflow-x-hidden px-6 py-24 md:overflow-x-visible ">
+          <main className="mx-auto max-w-screen-sm overflow-x-hidden px-6 py-24 md:overflow-x-visible">
             <Header />
             {children}
             <Footer />

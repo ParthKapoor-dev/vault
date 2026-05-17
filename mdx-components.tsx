@@ -62,11 +62,12 @@ const components: MDXComponents = {
     <td className={cn("border border-border px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right", className)} {...props} />
   ),
   ol: ({ className, ...props }: React.HTMLAttributes<HTMLOListElement>) => {
-    if (
-      React.Children.toArray(props.children).some(
-        (child) => React.isValidElement(child) && (child as React.ReactElement).props.id?.includes("user-content-fn-"),
-      )
-    ) {
+    const hasFootnotes = React.Children.toArray(props.children).some(
+      (child) =>
+        React.isValidElement(child) &&
+        (child.props as { id?: string }).id?.includes("user-content-fn-"),
+    );
+    if (hasFootnotes) {
       return (
         <ol data-footnotes>
           <div className="mt-6 mb-2 text-muted text-small">Footnotes</div>
@@ -82,27 +83,26 @@ const components: MDXComponents = {
       return (
         <li id={props.id}>
           {React.Children.map(children, (child) => {
-            if (React.isValidElement(child)) {
-              if (child.type === "p") {
-                const href = child.props.children.find((child: React.ReactNode) => {
-                  if (React.isValidElement(child)) {
-                    return React.isValidElement(child) && "props" in child && (child.props as { href?: string }).href?.includes("user-content-fnref-");
-                  }
-                  return false;
-                })?.props.href;
-
-                const filtered = child.props.children.filter((child: React.ReactNode) => {
-                  if (React.isValidElement(child)) {
-                    return !(React.isValidElement(child) && "props" in child && (child.props as { href?: string }).href?.includes("user-content-fnref-"));
-                  }
-                  return true;
-                });
-
-                return <FootnoteBackReference href={href}>{filtered}</FootnoteBackReference>;
-              }
-              return child;
-            }
-            return child;
+            if (!React.isValidElement(child) || child.type !== "p") return child;
+            const pChildren = React.Children.toArray(
+              (child.props as { children?: React.ReactNode }).children,
+            );
+            const isBackRef = (c: React.ReactNode) =>
+              React.isValidElement(c) &&
+              !!(c.props as { href?: string }).href?.includes(
+                "user-content-fnref-",
+              );
+            const backRef = pChildren.find(isBackRef);
+            const href =
+              backRef && React.isValidElement(backRef)
+                ? (backRef.props as { href?: string }).href
+                : undefined;
+            const filtered = pChildren.filter((c) => !isBackRef(c));
+            return (
+              <FootnoteBackReference href={href ?? ""}>
+                {filtered}
+              </FootnoteBackReference>
+            );
           })}
         </li>
       );
@@ -117,7 +117,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
   };
 }
 
-export function MDX(props: JSX.IntrinsicAttributes & MDXRemoteProps) {
+export function MDX(props: React.JSX.IntrinsicAttributes & MDXRemoteProps) {
   return (
     <MDXRemote
       {...props}

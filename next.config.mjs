@@ -1,16 +1,13 @@
-import nextMDX from "@next/mdx";
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // A stray lockfile higher up the tree confuses workspace-root inference.
+  turbopack: {
+    root: import.meta.dirname,
+  },
   images: {
     remotePatterns: [{ hostname: "avatars.githubusercontent.com" }],
   },
-  pageExtensions: ["md", "mdx", "tsx", "ts", "jsx", "js"],
 };
 
-const withMDX = nextMDX({
-  extension: /\.mdx?$/,
-});
-
-export default withMDX(nextConfig);
+export default nextConfig;
