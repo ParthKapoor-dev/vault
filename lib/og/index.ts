@@ -14,14 +14,14 @@ export const OpenGraph: Metadata = {
     url: process.env.NEXT_PUBLIC_SITE_URL,
     title: "Vault",
     description: "...",
-    images: [`${process.env.NEXT_PUBLIC_SITE_URL}api/og`],
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/api/og`],
     siteName: "Vault",
   },
   twitter: {
     card: "summary_large_image",
     title: "Vault",
     description: "...",
-    images: [`${process.env.NEXT_PUBLIC_SITE_URL}api/og`],
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/api/og`],
   },
   robots: {
     index: true,

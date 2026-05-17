@@ -1,115 +1,82 @@
-# 🧠 LNX Vault
+# Vault
 
-**Your own private, self-hostable digital vault — powered by GitHub Auth and S3.**
-Create directories, upload files, write beautiful markdowns, and access it all from a minimal web UI.
-Perfect for dotfiles, resumes, personal notes, and more — with support for public/private access control.
+A minimal, fast personal vault — store files, write blog posts, and keep
+passwords, all behind GitHub authentication. Backed entirely by **Cloudflare
+R2**: no database, no Redis, nothing else to run.
 
-> 🌐 Live Demo: [lnx.parthkapoor.me](https://lnx.parthkapoor.me)
+## Features
 
----
+- **GitHub auth** — stateless, custom OAuth flow with a signed JWT cookie
+  (`jose`). No auth database.
+- **Per-item visibility** — every file, folder, and post is independently
+  toggleable between **public** and **private**. Logged-out visitors only ever
+  see public items.
+- **File storage** — uploads go straight from the browser to R2 via presigned
+  URLs (no serverless size limit). Images, PDFs and text render inline.
+- **Blog posts** — Markdown/MDX documents with a built-in editor (live
+  preview) and syntax-highlighted rendering.
+- **Password vault** — zero-knowledge. A master passphrase derives an
+  AES-256-GCM key **in your browser**; R2 only ever stores ciphertext. The
+  passphrase and decrypted data never touch the server.
 
-## ✨ Features
+## Stack
 
-- 🔐 **GitHub Authentication** with Admin access control
-- 🪣 **S3-Backed Storage** (DigitalOcean Spaces, AWS S3, etc.)
-- 📂 **Directory and File Management** via Web
-- 📝 **Markdown Editor** for notes, resumes, and guides
-- 🌐 **Public/Private Access** for files and folders
-- 🚀 **One-Click Deploy on Vercel**
+Next.js 16 · React 19 · TypeScript · Tailwind CSS · `@aws-sdk/client-s3`
+(R2) · `jose` · `next-mdx-remote` · Web Crypto API.
 
----
+## Setup
 
-## ⚙️ Tech Stack
+1. **Install**
 
-- **Frontend**: Next.js (TypeScript)
-- **Auth**: [Better Stack Auth](https://betterstack.com/)
-- **Storage**: S3-compatible (Spaces, AWS, etc.)
-- **Cache**: Upstash Redis
-- **Markdown**: MDX Rendering
+   ```bash
+   pnpm install
+   ```
 
----
+2. **Cloudflare R2** — create a bucket and an R2 API token (Account ID, Access
+   Key ID, Secret Access Key).
 
-## 🚀 Self-Hosting Guide
+   For browser uploads to work, add a **CORS policy** to the bucket allowing
+   `PUT` and `GET` from your site origin:
 
-### 1. 🍴 Clone the Repository
+   ```json
+   [
+     {
+       "AllowedOrigins": ["http://localhost:3000", "https://your-domain"],
+       "AllowedMethods": ["GET", "PUT"],
+       "AllowedHeaders": ["Content-Type"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
 
-```bash
-git clone https://github.com/parthkapoor-dev/lnx-vault.git
-cd lnx-vault
-````
+3. **GitHub OAuth app** — create one at
+   <https://github.com/settings/developers>. Set the **Authorization callback
+   URL** to `<NEXT_PUBLIC_SITE_URL>/api/auth/callback`.
 
----
+4. **Environment** — copy `.env.example` to `.env.local` and fill it in.
+   Generate `SESSION_SECRET` with `openssl rand -base64 48`. Set
+   `GITHUB_ADMIN_EMAIL` to the GitHub email that should own the vault (admin).
 
-### 2. 🧪 Set Up Environment Variables
+5. **Run**
 
-Create a `.env` file in the root:
+   ```bash
+   pnpm dev      # http://localhost:3000
+   pnpm build    # production build
+   ```
 
-```env
-# Your live or local URL
-NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+## How the password vault works
 
-# Better Auth
-BETTER_AUTH_SECRET=""
-BETTER_AUTH_URL="http://localhost:3000"
+The vault is a single encrypted blob at `passwords/vault.enc` in R2:
 
-# GitHub OAuth App
-GITHUB_CLIENT_ID=""
-GITHUB_CLIENT_SECRET=""
-GITHUB_ADMIN_EMAIL=""
+- A master passphrase + PBKDF2 (600k iterations) derive an AES-256-GCM key in
+  the browser.
+- Entries are encrypted/decrypted client-side only.
+- The server actions read and write the opaque ciphertext — they never see the
+  passphrase, the key, or any plaintext.
+- There is no recovery: lose the passphrase and the vault is unrecoverable.
 
-# Upstash Redis
-UPSTASH_REDIS_REST_URL=""
-UPSTASH_REDIS_REST_TOKEN=""
+## Roles
 
-# S3 / Spaces
-SPACES_KEY=""
-SPACES_SECRET=""
-SPACES_BUCKET=""
-```
-
-> 💡 You can use [DigitalOcean Spaces](https://www.digitalocean.com/products/spaces) or any S3-compatible provider.
-
----
-
-### 3. 🧑‍💻 Run Locally
-
-```bash
-npm install
-npm run dev
-```
-
-Now open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-### 4. ☁️ Deploy on Vercel (Recommended)
-
-1. Push the repo to your GitHub
-2. Go to [vercel.com](https://vercel.com)
-3. Click **"Import Project"**, choose your repo
-4. Set the environment variables in Vercel dashboard
-5. Click **Deploy**
-
-Done 🎉 Your personalized cloud vault is now live!
-
----
-
-## 🔐 Admin Access
-
-By default, only the GitHub account marked as "admin" in your `.env`-connected auth logic can:
-
-* Create/upload/edit files & markdowns
-* Add/remove directories
-* Toggle public/private flags
-
----
-
-## 📄 License
-
-MIT © [Parth Kapoor](https://parthkapoor.me)
-
----
-
-## 🌟 Star This Project
-
-If this helped you organize your digital life — consider giving it a ⭐ on GitHub!
+- **Admin** (`GITHUB_ADMIN_EMAIL`) — full read/write, sees private items, owns
+  the password vault.
+- **Everyone else** — read-only access to public items.
