@@ -1,19 +1,42 @@
 "use server";
-import type { GetObjectCommandInput } from "@aws-sdk/client-s3";
+import { r2, R2_BUCKET } from "@/lib/r2";
+import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import type { Visibility } from "@/types/items";
 
-import { s3Client } from "@/lib/s3";
+export interface ResolvedFile {
+  key: string;
+  title: string;
+  contentType: string;
+  visibility: Visibility;
+  size: number;
+  /** True for markdown/MDX blog documents. */
+  isBlog: boolean;
+}
 
-export default async function getObject(Key: string) {
-  const params: GetObjectCommandInput = {
-    Bucket: process.env.SPACES_BUCKET || "",
-    Key,
-  };
-
+/** Returns file metadata for an exact key, or null if it isn't an object. */
+export async function headFile(key: string): Promise<ResolvedFile | null> {
   try {
-    const data = await s3Client.getObject(params);
-    console.log(`Successfully uploaded object: ${params.Bucket}/${params.Key}`);
-    return data;
-  } catch (err) {
-    console.log("Error", err);
+    const head = await r2.send(
+      new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }),
+    );
+    return {
+      key,
+      title: head.Metadata?.title || key.split("/").pop() || key,
+      contentType: head.ContentType || "application/octet-stream",
+      visibility:
+        head.Metadata?.visibility === "public" ? "public" : "private",
+      size: head.ContentLength || 0,
+      isBlog: /\.mdx?$/i.test(key),
+    };
+  } catch {
+    return null;
   }
+}
+
+/** Reads a (text) object's body as a string. Used for blog content. */
+export async function getObjectText(key: string): Promise<string> {
+  const res = await r2.send(
+    new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }),
+  );
+  return (await res.Body?.transformToString()) ?? "";
 }

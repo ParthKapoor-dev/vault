@@ -1,50 +1,48 @@
 "use server";
-import type {
-  PutObjectCommandInput,
-  DeleteObjectCommandInput,
-  CopyObjectCommandInput,
-} from "@aws-sdk/client-s3";
-import { s3Client } from "@/lib/s3";
-import {
-  PutObjectCommand,
-  DeleteObjectCommand,
-  CopyObjectCommand,
-} from "@aws-sdk/client-s3";
+import type { PutObjectCommandInput } from "@aws-sdk/client-s3";
+import { r2, R2_BUCKET } from "@/lib/r2";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
-import { Item } from "@/types/items";
+import { requireAdmin } from "@/lib/auth/session";
+import type { Item } from "@/types/items";
 
-// Create a new item (Directory or File)
+function blogSeed(title: string) {
+  return `---\ntitle: ${title}\ndate: ${new Date().toISOString()}\n---\n\n# ${title}\n\nStart writing…\n`;
+}
+
+// Create a new item (Directory or File) in R2.
 export async function createS3Item(path: string, item: Item) {
+  await requireAdmin();
+
   const itemPath = path ? `${path}/${item.slug}` : item.slug;
-
-  // For directories, create a placeholder object with trailing slash
+  // Directories are represented by a placeholder object with a trailing slash.
   const key = item.type === "Directory" ? `${itemPath}/` : itemPath;
+  const isBlog = /\.mdx?$/i.test(key);
 
-  const metadata = {
-    title: item.title,
-    type: item.type,
-    createdAt: item.createdAt.toString(),
-  };
+  const body =
+    item.type === "Directory"
+      ? ""
+      : isBlog
+        ? blogSeed(item.title)
+        : "# " + item.title;
 
   const params: PutObjectCommandInput = {
-    Bucket: process.env.SPACES_BUCKET || "",
+    Bucket: R2_BUCKET,
     Key: key,
-    Body: item.type === "Directory" ? "" : "# " + item.title, // Empty for directories, basic content for files
-    ACL: "private",
-    Metadata: metadata,
+    Body: body,
+    Metadata: {
+      title: item.title,
+      type: item.type,
+      visibility: item.visibility ?? "private",
+      createdAt: item.createdAt.toString(),
+    },
     ContentType:
       item.type === "Directory" ? "application/x-directory" : "text/markdown",
   };
 
   try {
-    const data = await s3Client.send(new PutObjectCommand(params));
-    console.log(
-      `Successfully created ${item.type}: ${params.Bucket}/${params.Key}`,
-    );
-
-    // Revalidate the current path to refresh the data
+    const data = await r2.send(new PutObjectCommand(params));
     revalidatePath(`/${path}`);
-
     return { success: true, data };
   } catch (err) {
     console.error("Error creating item:", err);
@@ -52,11 +50,4 @@ export async function createS3Item(path: string, item: Item) {
       `Failed to create ${item.type.toLowerCase()}: ${err instanceof Error ? err.message : "Unknown error"}`,
     );
   }
-}
-
-// List objects in a path (helper function for fetching items)
-export async function listS3Items(path: string = "") {
-  // This would be implemented based on your specific S3 listing needs
-  // You might want to use ListObjectsV2Command here
-  // This is a placeholder - implement based on your existing data fetching logic
 }

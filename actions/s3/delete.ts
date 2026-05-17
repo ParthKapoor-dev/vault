@@ -1,26 +1,51 @@
 "use server";
-import type { DeleteObjectCommandInput } from "@aws-sdk/client-s3";
-import { s3Client } from "@/lib/s3";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { r2, R2_BUCKET } from "@/lib/r2";
+import {
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth/session";
 
-// Delete an item
+// Delete an item. Directories are deleted recursively (placeholder + children).
 export async function deleteS3Item(path: string, slug: string) {
+  await requireAdmin();
+
   const key = path ? `${path}/${slug}` : slug;
 
-  const params: DeleteObjectCommandInput = {
-    Bucket: process.env.SPACES_BUCKET || "",
-    Key: key,
-  };
-
   try {
-    const data = await s3Client.send(new DeleteObjectCommand(params));
-    console.log(`Successfully deleted object: ${params.Bucket}/${params.Key}`);
+    // Delete the object itself (file, or directory placeholder).
+    await r2
+      .send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+      .catch(() => {});
 
-    // Revalidate the current path to refresh the data
+    // If it's a directory, delete everything nested under it.
+    let token: string | undefined;
+    do {
+      const listed = await r2.send(
+        new ListObjectsV2Command({
+          Bucket: R2_BUCKET,
+          Prefix: `${key}/`,
+          ContinuationToken: token,
+        }),
+      );
+      const objects = (listed.Contents ?? [])
+        .map((o) => o.Key)
+        .filter((k): k is string => !!k);
+      if (objects.length > 0) {
+        await r2.send(
+          new DeleteObjectsCommand({
+            Bucket: R2_BUCKET,
+            Delete: { Objects: objects.map((Key) => ({ Key })) },
+          }),
+        );
+      }
+      token = listed.IsTruncated ? listed.NextContinuationToken : undefined;
+    } while (token);
+
     revalidatePath(`/${path}`);
-
-    return { success: true, data };
+    return { success: true };
   } catch (err) {
     console.error("Error deleting item:", err);
     throw new Error(

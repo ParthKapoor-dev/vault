@@ -1,117 +1,109 @@
 "use server";
-import type {
-  DeleteObjectCommandInput,
-  CopyObjectCommandInput,
-} from "@aws-sdk/client-s3";
-import { s3Client } from "@/lib/s3";
+import { r2, R2_BUCKET } from "@/lib/r2";
 import { HeadObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { revalidatePath } from "next/cache";
-import { Items } from "@/types/items";
+import { getSession } from "@/lib/auth/session";
+import type { Items, Item } from "@/types/items";
 
+/** Reserved prefix for the password vault — never surfaced in normal listings. */
+const HIDDEN_PREFIX = "passwords";
+
+/**
+ * Lists directories and files at a given vault path. Backed by Cloudflare R2.
+ * Non-admins only ever receive items marked `public`.
+ */
 export async function listObjectsV2(path: string = ""): Promise<Items | null> {
   try {
-    // Construct the prefix - ensure it ends with / for proper directory listing
     const prefix = path ? `${path}/` : "";
 
-    const params = {
-      Bucket: process.env.SPACES_BUCKET || "",
-      Prefix: prefix,
-      Delimiter: "/", // This helps organize results by "folders"
-    };
+    const response = await r2.send(
+      new ListObjectsV2Command({
+        Bucket: R2_BUCKET,
+        Prefix: prefix,
+        Delimiter: "/",
+      }),
+    );
 
-    const command = new ListObjectsV2Command(params);
-    const response = await s3Client.send(command);
+    const tasks: Promise<Item | null>[] = [];
 
-    const items: Items = [];
-
-    // Process "folders" (CommonPrefixes)
-    if (response.CommonPrefixes) {
-      for (const commonPrefix of response.CommonPrefixes) {
-        if (commonPrefix.Prefix && commonPrefix.Prefix !== prefix) {
-          // Extract folder name from prefix
-          const folderName = commonPrefix.Prefix.replace(prefix, "").replace(
-            "/",
-            "",
-          );
-
-          // Try to get metadata for the folder (some systems store folder metadata)
+    // Directories (CommonPrefixes)
+    for (const cp of response.CommonPrefixes ?? []) {
+      if (!cp.Prefix || cp.Prefix === prefix) continue;
+      const name = cp.Prefix.replace(prefix, "").replace(/\/$/, "");
+      if (path === "" && name === HIDDEN_PREFIX) continue;
+      tasks.push(
+        (async (): Promise<Item> => {
           try {
-            const headParams = {
-              Bucket: process.env.SPACES_BUCKET || "",
-              Key: commonPrefix.Prefix,
-            };
-
-            const headResponse = await s3Client.send(
-              new HeadObjectCommand(headParams),
+            const head = await r2.send(
+              new HeadObjectCommand({ Bucket: R2_BUCKET, Key: cp.Prefix }),
             );
-
-            items.push({
+            return {
               type: "Directory",
-              title: headResponse.Metadata?.title || folderName,
-              slug: folderName,
-              createdAt: headResponse.LastModified?.getTime() || Date.now(),
-            });
+              title: head.Metadata?.title || name,
+              slug: name,
+              visibility:
+                head.Metadata?.visibility === "public" ? "public" : "private",
+              createdAt: head.LastModified?.getTime() || Date.now(),
+            };
           } catch {
-            // If no metadata exists, create a basic directory entry
-            items.push({
+            return {
               type: "Directory",
-              title: folderName,
-              slug: folderName,
-              createdAt: Date.now(), // Fallback timestamp
-            });
+              title: name,
+              slug: name,
+              visibility: "private",
+              createdAt: Date.now(),
+            };
           }
-        }
-      }
+        })(),
+      );
     }
 
-    // Process files (Contents)
-    if (response.Contents) {
-      for (const object of response.Contents) {
-        if (object.Key && object.Key !== prefix && !object.Key.endsWith("/")) {
-          // Extract filename from key
-          const fileName = object.Key.replace(prefix, "");
-
-          // Skip if this is a nested file (contains additional slashes)
-          if (fileName.includes("/")) continue;
-
-          // Try to get metadata for the file
+    // Files (Contents)
+    for (const object of response.Contents ?? []) {
+      if (!object.Key || object.Key === prefix || object.Key.endsWith("/"))
+        continue;
+      const fileName = object.Key.replace(prefix, "");
+      if (fileName.includes("/")) continue;
+      const key = object.Key;
+      tasks.push(
+        (async (): Promise<Item> => {
           try {
-            const headParams = {
-              Bucket: process.env.SPACES_BUCKET || "",
-              Key: object.Key,
-            };
-
-            const headResponse = await s3Client.send(
-              new HeadObjectCommand(headParams),
+            const head = await r2.send(
+              new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }),
             );
-
-            items.push({
+            return {
               type: "File",
-              title: headResponse.Metadata?.title || fileName,
+              title: head.Metadata?.title || fileName,
               slug: fileName,
+              visibility:
+                head.Metadata?.visibility === "public" ? "public" : "private",
               createdAt: object.LastModified?.getTime() || Date.now(),
-            });
+            };
           } catch {
-            // If no metadata exists, create a basic file entry
-            items.push({
+            return {
               type: "File",
               title: fileName,
               slug: fileName,
+              visibility: "private",
               createdAt: object.LastModified?.getTime() || Date.now(),
-            });
+            };
           }
-        }
-      }
+        })(),
+      );
     }
 
-    // If no items found and this is not the root path, return []
-    if (items.length === 0 && path !== "") {
-      return [];
+    const items = (await Promise.all(tasks)).filter(
+      (i): i is Item => i !== null,
+    );
+
+    // Non-admins only ever see public items.
+    const session = await getSession();
+    if (!session?.isAdmin) {
+      return items.filter((i) => i.visibility === "public");
     }
 
     return items;
   } catch (error) {
-    console.error("Error listing S3 objects:", error);
+    console.error("Error listing R2 objects:", error);
     return null;
   }
 }

@@ -1,12 +1,11 @@
-// page.tsx
-import type { Items } from "@/types/items";
 import * as FadeIn from "@/components/motion/staggers/fade";
 import PageTemplate from "@/components/PageTemplate";
 import React from "react";
-import { getSession } from "@/lib/auth";
-import { headers } from "next/headers";
 import { listObjectsV2 } from "@/actions/s3/list";
 import { notFound } from "next/navigation";
+
+// Listings depend on the visitor's session (admin sees private items).
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const Spacer = () => <div style={{ marginTop: "24px" }} />;
@@ -33,24 +32,3 @@ export default async function Page() {
     </React.Fragment>
   );
 }
-
-const mockItems: Items = [
-  {
-    type: "Directory",
-    slug: "resumes",
-    title: "Resumes",
-    createdAt: Date.now(),
-  },
-  {
-    type: "Directory",
-    slug: "config",
-    title: "Config Files",
-    createdAt: Date.now(),
-  },
-  {
-    type: "Directory",
-    slug: "about",
-    title: "About Me",
-    createdAt: Date.now(),
-  },
-];
